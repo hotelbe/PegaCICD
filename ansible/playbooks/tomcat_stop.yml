@@ -1,0 +1,13 @@
+---
+- name: Stop pega tomcat application server
+  hosts: pega_tomcat_server
+  connection: ssh
+  remote_user: root
+  gather_facts: true
+  become: yes
+  become_method: sudo
+  
+  roles:
+   - tomcat_stop
+   
+        

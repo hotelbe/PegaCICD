@@ -1,0 +1,56 @@
+pipeline {
+    agent { label 'PegaSlave' }
+               
+    parameters {
+        string(defaultValue: "DMSample", description: 'What is the product name?', name: 'productName')
+        string(defaultValue: "20180326.235148", description: 'What is the product version?', name: 'productVersion')
+	    choice(choices: 'ST\nSIT\nUAT', description: 'Environment to Export from?', name: 'IMPORT_ENVIRONMENT')
+        string(defaultValue: "administrator@pega.com", description: 'Export environment pega instance username', name: 'IMPORT_PEGA_APP_USERNAME')
+        password(defaultValue: "", description: 'Export environment pega instance password', name: 'IMPORT_PEGA_APP_PASSWORD')
+        password(defaultValue: "", description: 'Artifactory credential key', name: 'ARTIFACTORY_CREDENTIAL_ID')
+           }
+   
+    stages {
+        stage('Fetch from Artifactory') {
+            steps {
+                echo 'Fetch from Artifactory' 
+                script {            
+                  def pegaFetchArtifactory = load "pipelines/lib/pegaFetchArtifactoryPipeline.groovy"
+		  pegaFetchArtifactory.pegaFetchArtifactory()                   
+                       }
+                  }
+         } 
+        
+        stage('Deploy to environment') {
+          
+             steps {
+                   echo "Deploying to ${IMPORT_ENVIRONMENT}"  
+                   script {
+                  def pegaImport = load "pipelines/lib/pegaImportPipeline.groovy"
+		  pegaImport.pegaImport()               
+                                    
+                           }      
+            }
+        }
+
+
+        stage('Deployment Validation') {
+            steps {
+                echo 'Deployment Validation'  
+                script {
+                  def pegaDeployValidation = load "pipelines/lib/pegaDeployValidationPipeline.groovy"
+		  pegaDeployValidation.pegaDeployValidation() 
+                  }
+            }
+        }
+        
+  }
+
+  post {
+    failure {
+          echo 'NOT SUCESSFUL'
+          //slackSend (color: '#FF0000', message: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})")
+
+    }   
+  }
+}

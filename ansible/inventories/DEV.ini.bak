@@ -1,0 +1,2 @@
+[pega_tomcat_server]
+10.54.208.24 ansible_ssh_user=jenkins ansible_ssh_private_key_file=/tmp/nginx.pem
